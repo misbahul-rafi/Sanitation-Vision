@@ -1,0 +1,15 @@
+pyqt5
+sip
+lxml
+torch
+torchvision
+numpy
+matplotlib
+polars
+pyyaml
+pillow
+psutil
+requests
+scipy
+ultralytics-thop
+opencv-python-headless

@@ -1,0 +1,13 @@
+path: dataset/
+train: images/train
+val: images/val
+
+nc: 7
+names:
+  - gelas
+  - piring
+  - asbak
+  - botol
+  - handphone
+  - pelanggan
+  - laptop
