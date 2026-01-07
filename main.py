@@ -26,7 +26,7 @@ class SanitationApp:
         self._logger = self._setup_logger()
 
         self._cameras = self._create_cameras()
-        self._model = YOLOModel("runs/detect/train/weights/best.pt")
+        self._model = YOLOModel("runs/detect/train3/weights/best.pt")
         self._notifier = Notifier(token=self._bot_token, chat_id=self._chat_id)
         self._resmon = Resmon(interval=1)
 
@@ -96,6 +96,5 @@ class SanitationApp:
     def run(self):
         uvicorn.run(self.app, host=self._app_host, port=self._app_port)
 
-
-if __name__ == "__main__":
-    SanitationApp().run()
+sanitation_app = SanitationApp()
+app = sanitation_app.app
