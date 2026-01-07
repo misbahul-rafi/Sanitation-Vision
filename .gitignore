@@ -3,6 +3,7 @@ env/
 labelImg/
 runs/detect/predict/
 runs/detect/predict*
+runs/detect/old*
 snapshots/
 testimage/
 ffmpeg/
