@@ -8,3 +8,6 @@ runs/detect/*/last.pt
 snapshots/
 testimage/
 ffmpeg/
+.vscode/
+__pycache__/
+logs/
