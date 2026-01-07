@@ -5,3 +5,4 @@ runs/detect/predict/
 runs/detect/predict*
 snapshots/
 testimage/
+ffmpeg/
