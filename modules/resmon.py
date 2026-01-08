@@ -1,23 +1,19 @@
-# core/resmon.py
 import psutil, asyncio, time, os, csv, datetime
 from typing import Dict, Any
 import logging
-from dotenv import load_dotenv
+import os
 
 logger = logging.getLogger(__name__)
 
-load_dotenv()
-base_dir = os.getenv("BASE_DIR", r"C:\Users\MisbahulRafi\Desktop\SanitationVision")
-
 class Resmon:
-    def __init__(self, interval: float = 1.0, disk_path: str = "/"):
-        logger.debug(f"Memulai Resmon dengan interval={interval} dan disk_path={disk_path}")
-        self.interval = interval
+    def __init__(self, disk_path: str = "/"):
+        self._base_dir = os.getenv("BASE_DIR")
+        self._interval : float = float(os.getenv("RESMON_INTERVAL"))
         self.disk_path = disk_path
         self._latest: Dict[str, Any] = {}
-        self._running = False
-        self._csv_path = os.path.join(base_dir, "logs", "resmon.csv")
+        self._csv_path = os.path.join(self._base_dir, "logs", "resmon.csv")
 
+        logger.debug(f"Memulai Resmon dengan interval={self._interval} dan disk_path={disk_path}")
         try:
             os.makedirs(os.path.dirname(self._csv_path), exist_ok=True)
             logger.debug(f"Direktori logging resmon dipastikan ada: {self._csv_path}")
@@ -52,11 +48,9 @@ class Resmon:
         except Exception as e:
             logger.error(f"Gagal menyimpan data Resmon ke CSV: {e}")
         
-    async def run(self):
+    async def run(self, shutdown_event: asyncio.Event):
         logger.info("Resmon mulai berjalan")
-        self._running = True
-
-        while self._running:
+        while not shutdown_event.is_set():
             try:
                 cpu_temp = None
                 if hasattr(psutil, "sensors_temperatures"):
@@ -111,13 +105,9 @@ class Resmon:
             except Exception as e:
                 logger.error(f"Terjadi error fatal di loop Resmon: {e}")
 
-            await asyncio.sleep(self.interval)
+            await asyncio.sleep(self._interval)
 
         logger.info("Resmon dihentikan")
-
-    def stop(self):
-        logger.info("Menghentikan Resmon")
-        self._running = False
 
     def snapshot(self) -> Dict[str, Any]:
         logger.debug("Snapshot Resmon diminta")

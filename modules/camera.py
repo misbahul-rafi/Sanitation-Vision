@@ -4,6 +4,7 @@ import numpy as np
 from .table import Table
 import logging
 from collections import Counter
+import json
 
 logger = logging.getLogger("SanitationVision")
 
@@ -135,7 +136,7 @@ class Camera:
             return None
 
         except requests.exceptions.ConnectionError:
-            logger.error(f"connection error while accessing camera {self._name}")
+            logger.error(f"connection error while accessing camera {self._name}\n{self._source}")
             return None
 
         except Exception as e:
@@ -190,3 +191,9 @@ class Camera:
         status_counts = {status: counts.get(status, 0) for status in all_status}
 
         return status_counts
+    
+    def daily_report(self):
+        message = ""
+        for table in self._tables:
+            message += table.generate_report_message()
+        return message

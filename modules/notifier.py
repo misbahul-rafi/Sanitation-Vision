@@ -1,14 +1,16 @@
 from telegram.ext import ApplicationBuilder
 import cv2
 import logging
+import os
+import traceback
 
 logger = logging.getLogger("SanitationVision")
 
 class Notifier:
-    def __init__(self, token, chat_id):
-        self.token = token
-        self.chat_id = chat_id
-        self.app = ApplicationBuilder().token(token).build()
+    def __init__(self):
+        self._bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+        self._chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        self.app = ApplicationBuilder().token(self._bot_token).build()
         self._initialized = False
 
         async def error_handler(update, context):
@@ -44,10 +46,9 @@ class Notifier:
         if not self._initialized:
             logger.warning("send_message dipanggil tapi notifier belum initialized")
             return
-
         try:
-            await self.app.bot.send_message(chat_id=self.chat_id, text=message)
-            logger.debug(f"Pesan berhasil dikirim: {message}")
+            await self.app.bot.send_message(chat_id=self._chat_id, text=message)
+            logger.info(f"Pesan berhasil dikirim.")
         except Exception as e:
             logger.error(f"Gagal mengirim pesan: {e}")
 
@@ -76,7 +77,7 @@ class Notifier:
             bytes_image = buffer.tobytes()
 
             await self.app.bot.send_photo(
-                chat_id=self.chat_id,
+                chat_id=self._chat_id,
                 photo=bytes_image,
                 caption=caption
             )

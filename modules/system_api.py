@@ -6,9 +6,7 @@ import cv2
 import logging
 import time
 import os
-
 from .camera import Camera
-from .yolo_model import YOLOModel
 
 logger = logging.getLogger("SanitationVision")
 predict_interval = int(os.getenv("PREDICT_INTERVAL", 10))
@@ -18,7 +16,6 @@ class SystemAPI:
         self,
         shutdown_is_set,
         get_resmon,
-        model: YOLOModel,
         cameras: list[Camera]
     ):
         logger.debug("Inisialisasi SystemAPI")
@@ -26,7 +23,6 @@ class SystemAPI:
         self._cameras = cameras
         self.shutdown_is_set = shutdown_is_set
         self.get_resmon = get_resmon
-        self._model = model
         self._setup_routes()
         
     def _get_camera_by_name(self, camera_name: str) -> Camera | None:
@@ -147,3 +143,12 @@ class SystemAPI:
                     "Expires": "0",
                 }
             )
+        @self.router.get("/history")
+        def camera_history():
+            payload = {}
+            for camera in self._cameras:
+                payload[camera.get_name()] = camera.get_history()
+
+            return JSONResponse(content=payload)
+                
+            

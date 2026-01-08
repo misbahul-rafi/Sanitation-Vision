@@ -1,13 +1,14 @@
 from ultralytics import YOLO
 import logging
+import os
 
 logger = logging.getLogger("SanitationVision")
-
 class YOLOModel:
-    def __init__(self, model_path):
+    def __init__(self):
+        self._model_path = os.getenv("MODEL_PATH")
         try:
-            logger.info(f"loading YOLO model from {model_path}")
-            self._model = YOLO(model_path)
+            logger.info(f"loading YOLO model from {self._model_path}")
+            self._model = YOLO(self._model_path)
             logger.info("YOLO model loaded successfully")
         except Exception as e:
             logger.critical(f"failed to load YOLO model: {e}")
@@ -49,14 +50,5 @@ class YOLOModel:
                 set_annotated(annotated_image)
             except Exception as e:
                 logger.error(f"failed sending annotated image to camera: {e}")
-        # if objects.boxes is None or len(objects.boxes) == 0:
-        #     logger.debug("Tidak ada objek terdeteksi pada frame ini")
-        # else:
-        #     items = []
-        #     for box in objects.boxes:
-        #         cls_id = int(box.cls.item())
-        #         label = objects.names[cls_id]
-        #         items.append(label)
-            # print(items)
         logger.debug("prediction completed successfully")
         return objects

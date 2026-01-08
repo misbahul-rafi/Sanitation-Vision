@@ -1,4 +1,4 @@
-from modules import Camera, ColorFormatter, Notifier, Resmon, SanitationManager, SystemAPI, Table, YOLOModel
+from modules import Camera, ColorFormatter, Notifier, Resmon, SanitationManager, SystemAPI, Table
 import logging
 import os
 import asyncio
@@ -8,39 +8,32 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
-
-
-
 class SanitationApp:
     def __init__(self):
         load_dotenv()
-        self._bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-        self._chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        self._shutdown_event = asyncio.Event()
+        self._logger = self._setup_logger()
+        
         self._camera_indoor = os.getenv("SOURCE_CAMERA_INDOOR")
         self._camera_outdoor = os.getenv("SOURCE_CAMERA_OUTDOOR")
         self._app_host = os.getenv("APP_HOST")
         self._app_port = int(os.getenv("APP_PORT"))
 
-        self._shutdown_event = asyncio.Event()
-
-        self._logger = self._setup_logger()
 
         self._cameras = self._create_cameras()
-        self._model = YOLOModel("runs/detect/train3/weights/best.pt")
-        self._notifier = Notifier(token=self._bot_token, chat_id=self._chat_id)
-        self._resmon = Resmon(interval=1)
+        self._notifier = Notifier()
+        self._resmon = Resmon()
 
         self.manager = SanitationManager(
             self._notifier,
             self._cameras,
             status=True,
-            predict=self._model.predict
+            
         )
 
         self.system_api = SystemAPI(
             shutdown_is_set=self._shutdown_event.is_set,
             cameras=self._cameras,
-            model=self._model,
             get_resmon=self._resmon.snapshot,
         )
 
@@ -52,10 +45,12 @@ class SanitationApp:
         logger = logging.getLogger("SanitationVision")
         logger.setLevel(logging.INFO)
         logger.propagate = False
-        handler = logging.StreamHandler()
-        handler.setFormatter(ColorFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
-        logger.addHandler(handler)
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(ColorFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
+            logger.addHandler(handler)
         return logger
+
 
     def _create_cameras(self):
         return [
@@ -87,14 +82,38 @@ class SanitationApp:
     @asynccontextmanager
     async def _lifespan(self, app: FastAPI):
         await self._notifier.initialize()
-        manager_task = asyncio.create_task(self.manager.run())
-        resmon_task = asyncio.create_task(self._resmon.run())
+        manager_task = asyncio.create_task(
+            self.manager.run(self._shutdown_event)
+        )
+        resmon_task = asyncio.create_task(
+            self._resmon.run(self._shutdown_event)
+        )
         yield
-        await self._notifier.stop()
         self._shutdown_event.set()
+        await self._notifier.stop()
+        await asyncio.gather(
+            manager_task,
+            resmon_task,
+            return_exceptions=True
+        )
 
     def run(self):
         uvicorn.run(self.app, host=self._app_host, port=self._app_port)
-
-sanitation_app = SanitationApp()
-app = sanitation_app.app
+        
+if __name__ == "__main__":
+    sanitation_app = SanitationApp()
+    app = sanitation_app.run()
+# sanitation_app = SanitationApp()
+# app = sanitation_app.app
+# if __name__ == "__main__":
+#     env = os.getenv("APP_ENV", "development")
+#     if env == "development":
+#         uvicorn.run(
+#             "main:app",
+#             host=os.getenv("APP_HOST", "127.0.0.1"),
+#             port=int(os.getenv("APP_PORT", 8000)),
+#             # reload=True,
+#             # log_level="debug"
+#         )
+#     else:
+#         sanitation_app.run()
