@@ -115,6 +115,9 @@ class Camera:
         try:
             if not self._open_rtsp():
                 return None
+            
+            for _ in range(5):
+                self._cap.grab()
 
             ret, frame = self._cap.read()
             if not ret or frame is None:

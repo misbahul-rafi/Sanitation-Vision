@@ -11,3 +11,4 @@ ffmpeg/
 .vscode/
 __pycache__/
 logs/
+.env
