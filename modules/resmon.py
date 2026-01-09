@@ -57,7 +57,7 @@ class Resmon:
                     try:
                         temps = psutil.sensors_temperatures()
                         if temps and "cpu_thermal" in temps:
-                            cpu_temp = temps["cpu_thermal"][0].current
+                            cpu_temp = round(temps["cpu_thermal"][0].current, 1)
                     except Exception as e:
                         logger.warning(f"Gagal membaca temperature CPU: {e}")
 
