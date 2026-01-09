@@ -46,7 +46,7 @@ class SystemAPI:
                         try:
                             payload = {
                                 "system": self.get_resmon(),
-                                "detection": self._manager_status(),
+                                "manager": self._manager_status(),
                                 "cameras": [camera.get_camera_data() for camera in self._cameras]
                             }
 
