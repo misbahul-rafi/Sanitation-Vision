@@ -27,8 +27,10 @@ class SanitationManager:
         self._close_hour = datetime.strptime(os.getenv("CLOSE_HOUR"), "%H:%M").time()
         self._predict_interval = int(os.getenv("PREDICT_INTERVAL", 10))
         self._alert_interval = int(os.getenv("ALERT_INTERVAL", 10))
-        self._base_dir = os.getenv("BASE_DIR")
-
+        self._base_dir = os.getenv("BASE_DIR")\
+            
+    def get_manager_status(self):
+        return self._status
 
     async def _is_operational_time(self):
         if self._open_hour <= datetime.now().time() <= self._close_hour:

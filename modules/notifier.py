@@ -1,8 +1,7 @@
 from telegram.ext import ApplicationBuilder
 import cv2
 import logging
-import os
-import traceback
+import os, asyncio
 
 logger = logging.getLogger("SanitationVision")
 
@@ -19,15 +18,25 @@ class Notifier:
         self.app.add_error_handler(error_handler)
 
     async def initialize(self):
-        try:
-            logger.info("Initializing Telegram notifier")
-            await self.app.initialize()
-            await self.app.start()
-            self._initialized = True
-            logger.info("Telegram notifier successfully initialized")
-        except Exception as e:
-            logger.critical(f"Gagal initialize Telegram Notifier: {e}")
-            self._initialized = False
+        attempt = 0
+        while not self._initialized:
+            attempt += 1
+            try:
+                logger.info(f"Initializing Telegram notifier, attempt {attempt}")
+                self.app = ApplicationBuilder().token(self._bot_token).build()
+                async def error_handler(update, context):
+                    logger.error("Telegram internal error occurred", exc_info=context.error)
+                    
+                self.app.add_error_handler(error_handler)
+
+                await self.app.initialize()
+                await asyncio.sleep(0.5)
+                await self.app.start()
+                self._initialized = True
+                logger.info("Telegram notifier successfully initialized")
+            except Exception as e:
+                logger.critical(f"Gagal initialize Telegram Notifier: {e}")
+                await asyncio.sleep(5)
 
     async def stop(self):
         try:

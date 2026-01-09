@@ -16,13 +16,15 @@ class SystemAPI:
         self,
         shutdown_is_set,
         get_resmon,
-        cameras: list[Camera]
+        cameras: list[Camera],
+        manager_status
     ):
         logger.debug("Inisialisasi SystemAPI")
         self.router = APIRouter()
         self._cameras = cameras
         self.shutdown_is_set = shutdown_is_set
         self.get_resmon = get_resmon
+        self._manager_status = manager_status
         self._setup_routes()
         
     def _get_camera_by_name(self, camera_name: str) -> Camera | None:
@@ -44,6 +46,7 @@ class SystemAPI:
                         try:
                             payload = {
                                 "system": self.get_resmon(),
+                                "detection": self._manager_status(),
                                 "cameras": [camera.get_camera_data() for camera in self._cameras]
                             }
 

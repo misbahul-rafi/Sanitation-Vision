@@ -35,6 +35,7 @@ class SanitationApp:
             shutdown_is_set=self._shutdown_event.is_set,
             cameras=self._cameras,
             get_resmon=self._resmon.snapshot,
+            manager_status = self.manager.get_manager_status
         )
 
         self.app = FastAPI(lifespan=self._lifespan)
@@ -49,6 +50,9 @@ class SanitationApp:
             handler = logging.StreamHandler()
             handler.setFormatter(ColorFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
             logger.addHandler(handler)
+            file_handler = logging.FileHandler("logs/sanitation.log", encoding="utf-8")
+            file_handler.setFormatter(ColorFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
+            logger.addHandler(file_handler)
         return logger
 
 
@@ -96,24 +100,8 @@ class SanitationApp:
             resmon_task,
             return_exceptions=True
         )
-
-    def run(self):
-        uvicorn.run(self.app, host=self._app_host, port=self._app_port)
         
+sanitation_app = SanitationApp()
+app = sanitation_app.app
 if __name__ == "__main__":
-    sanitation_app = SanitationApp()
-    app = sanitation_app.run()
-# sanitation_app = SanitationApp()
-# app = sanitation_app.app
-# if __name__ == "__main__":
-#     env = os.getenv("APP_ENV", "development")
-#     if env == "development":
-#         uvicorn.run(
-#             "main:app",
-#             host=os.getenv("APP_HOST", "127.0.0.1"),
-#             port=int(os.getenv("APP_PORT", 8000)),
-#             # reload=True,
-#             # log_level="debug"
-#         )
-#     else:
-#         sanitation_app.run()
+    uvicorn.run(app, host=sanitation_app._app_host, port=sanitation_app._app_port)
