@@ -34,6 +34,7 @@ class Notifier:
                 await self.app.start()
                 self._initialized = True
                 logger.info("Telegram notifier successfully initialized")
+                await self.send_message("Telegram notifier successfully initialized")
             except Exception as e:
                 logger.critical(f"Gagal initialize Telegram Notifier: {e}")
                 await asyncio.sleep(5)

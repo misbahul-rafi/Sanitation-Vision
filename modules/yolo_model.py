@@ -1,6 +1,6 @@
 from ultralytics import YOLO
 import logging
-import os
+import os, time
 
 logger = logging.getLogger("SanitationVision")
 class YOLOModel:

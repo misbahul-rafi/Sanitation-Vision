@@ -104,4 +104,4 @@ class SanitationApp:
 sanitation_app = SanitationApp()
 app = sanitation_app.app
 if __name__ == "__main__":
-    uvicorn.run(app, host=sanitation_app._app_host, port=sanitation_app._app_port)
+    uvicorn.run(app, host=sanitation_app._app_host, port=sanitation_app._app_port, access_log=False)

@@ -22,13 +22,13 @@ class SanitationManager:
         self.cameras = cameras
         self._status = status
         self._model = YOLOModel()
-        
+
         self._open_hour = datetime.strptime(os.getenv("OPEN_HOUR"), "%H:%M").time()
         self._close_hour = datetime.strptime(os.getenv("CLOSE_HOUR"), "%H:%M").time()
         self._predict_interval = int(os.getenv("PREDICT_INTERVAL", 10))
         self._alert_interval = int(os.getenv("ALERT_INTERVAL", 10))
-        self._base_dir = os.getenv("BASE_DIR")\
-            
+        self._base_dir = os.getenv("BASE_DIR")
+
     def get_manager_status(self):
         return self._status
 
@@ -48,18 +48,20 @@ class SanitationManager:
     async def run(self, shutdown_event: asyncio.Event):
         logger.info("SanitationVision started")
         while not shutdown_event.is_set():
-            if await self._is_operational_time() :
-                logger.info("starting predic...")
+            start_loop = time.time()
+            if await self._is_operational_time():
                 for camera in self.cameras:
                     camera_name = camera.get_name()
                     if camera.get_status():
+                        start_capture = time.time()
                         image = camera.get_snapshot()
+                        logger.info(f"Waktu capture {camera.get_name()} = {time.time() - start_capture}")
                         if image is None:
                             continue
+                        start_predict = time.time()
                         objects = self._model.predict(
                             image=image, set_annotated=camera.set_annotated
                         )
-
                         camera.set_is_update(True)
                         camera.group_items_in_table(objects)
                         for table in camera.get_tables():
@@ -77,7 +79,10 @@ class SanitationManager:
                                         await self.notifier.send_alert(
                                             table_id=table.get_id(),
                                             camera_name=camera_name,
-                                            time_dirtied=1,
+                                            time_dirtied=round(
+                                                (time.time() - table.get_start_time())
+                                                / 60
+                                            ),
                                             image=camera.get_annotated(),
                                         )
                                     else:
@@ -98,15 +103,14 @@ class SanitationManager:
                                         table_id=table.get_id(),
                                         camera_name=camera_name,
                                         image=camera.get_annotated(),
-                                        time_dirtied=round(
-                                            (time.time() - table.get_start_time()) / 60
-                                        ),
+                                        time_dirtied=1,
                                     )
                             else:
                                 logger.debug(f"{table.get_id()} = {table.get_status()}")
                                 table.reset_time()
                     else:
                         logger.info(f"camera {camera_name} is terminated")
+                logger.info(f"Time for 1 loop = {time.time() - start_loop}")
                 await asyncio.sleep(self._predict_interval)
             else:
                 logger.info("SanitationManager stopped")
