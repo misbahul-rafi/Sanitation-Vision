@@ -84,12 +84,7 @@ class Table:
     def get_table_data(self):
         return {
             "id": self._id,
-            "area": self._area,
             "status": self._status,
-            "status_buffer": list(self._status_buffer),
-            "start_time": self._start_time,
-            "last_alert": self._last_alert,
-            "items": list(self._items),
         }
         
 

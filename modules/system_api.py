@@ -26,6 +26,7 @@ class SystemAPI:
         self.get_resmon = get_resmon
         self._manager_status = manager_status
         self._setup_routes()
+
         
     def _get_camera_by_name(self, camera_name: str) -> Camera | None:
         logger.debug(f"Mencari kamera dengan nama: {camera_name}")
@@ -103,55 +104,37 @@ class SystemAPI:
                 }
             )
             
-        @self.router.get("/camera/control/{camera_name}")
-        def post_camera_control(camera_name: str, action: bool):
-            for camera in self._cameras:
-                if camera.get_name() == camera_name:
-                    camera.set_camera_status(action)
-                    time.sleep(predict_interval)
-                    return JSONResponse(
-                        status_code=status.HTTP_200_OK,
-                        content={
-                            "camera": camera.get_name(),
-                            "action": action,
-                            "status": "success"
-                        }
-                    )
+        @self.router.get("/camera/control/status/{camera_name}")
+        def get_camera_control(camera_name: str, action: bool):
+            camera = self._get_camera_by_name(camera_name)
+            if camera:
+                camera.set_camera_status(action)
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={
+                        "camera": camera_name,
+                        "action": action,
+                        "status": "success"
+                    }
+                )
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Camera '{camera_name}' not found"
             )
-
-        @self.router.get("/metadata/{camera_name}")
-        def get_camera_tables(camera_name: str):
-            logger.debug(f"Request metadata kamera: {camera_name}")
+        @self.router.get("/camera/control/draw/{camera_name}")
+        def get_camera_draw(camera_name: str, action: bool):
             camera = self._get_camera_by_name(camera_name)
-
-            if not camera:
-                logger.warning(f"Metadata kamera {camera_name} tidak ditemukan")
-                raise HTTPException(status_code=404, detail="Camera not found")
-
-            try:
-                data = camera.get_camera_data()
-                logger.debug(f"Metadata kamera {camera_name} berhasil dikirim")
-            except Exception as e:
-                logger.error(f"Gagal mendapatkan metadata kamera {camera_name}: {e}")
-                raise HTTPException(status_code=500, detail="Failed to retrieve metadata")
-
-            return JSONResponse(
-                content=data,
-                headers={
-                    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
-                    "Pragma": "no-cache",
-                    "Expires": "0",
-                }
+            if camera:
+                camera.set_is_draw(action)
+                return JSONResponse(
+                    status_code=status.HTTP_200_OK,
+                    content={
+                        "camera": camera_name,
+                        "action": action,
+                        "status": "success"
+                    }
+                )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Camera '{camera_name}' not found"
             )
-        @self.router.get("/history")
-        def camera_history():
-            payload = {}
-            for camera in self._cameras:
-                payload[camera.get_name()] = camera.get_history()
-
-            return JSONResponse(content=payload)
-                
-            

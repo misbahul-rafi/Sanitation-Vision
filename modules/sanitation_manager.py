@@ -53,12 +53,9 @@ class SanitationManager:
                 for camera in self.cameras:
                     camera_name = camera.get_name()
                     if camera.get_status():
-                        start_capture = time.time()
                         image = camera.get_snapshot()
-                        logger.info(f"Waktu capture {camera.get_name()} = {time.time() - start_capture}")
                         if image is None:
                             continue
-                        start_predict = time.time()
                         objects = self._model.predict(
                             image=image, set_annotated=camera.set_annotated
                         )

@@ -4,6 +4,7 @@ import numpy as np
 from .table import Table
 import logging
 from collections import Counter
+import asyncio
 
 logger = logging.getLogger("SanitationVision")
 
@@ -16,7 +17,55 @@ class Camera:
         self._annotated = None
         self._status = True
         self._is_update = False
+        self._cap = None
+        self._stream = None
+        self._last_frame = None
+        self._is_draw = False
 
+    async def stream(self, shutdown_event: asyncio.Event):
+        logger.info(f"RTSP stream started for camera {self._name}")
+        self._cap = cv2.VideoCapture(self._source, cv2.CAP_FFMPEG)
+
+        if not self._cap.isOpened():
+            logger.error(f"Failed to open RTSP stream {self._name}")
+            return
+        while not shutdown_event.is_set():
+            for _ in range(5):
+                ret, frame = await asyncio.to_thread(self._cap.read)
+                if not ret:
+                    break
+
+            if ret:
+                self._last_frame = frame
+            else:
+                await asyncio.sleep(0.05)
+
+        self._cap.release()
+        logger.info(f"RTSP stream stopped for camera {self._name}")
+        
+    def get_snapshot(self):
+        try:
+            logger.debug(f"getting frame from stream for camera {self._name}")
+
+            if self._last_frame is None:
+                logger.error(f"frame is not available yet for camera {self._name}")
+                return None
+
+            if not isinstance(self._last_frame, np.ndarray):
+                logger.error(f"invalid frame type for camera {self._name}")
+                return None
+
+            if self._last_frame.size == 0:
+                logger.error(f"frame is empty or corrupted for camera {self._name}")
+                return None
+            frame = self._last_frame.copy()
+
+            return frame
+
+        except Exception as e:
+            logger.error(f"unexpected error getting frame from {self._name}: {e}")
+            return None
+        
     def get_camera_data(self):
         return {
             "name": self._name,
@@ -28,6 +77,9 @@ class Camera:
 
     def set_is_update(self, value):
         self._is_update = value
+        
+    def set_is_draw(self, value):
+        self._is_draw = value
 
     def get_is_update(self):
         return self._is_update
@@ -74,7 +126,8 @@ class Camera:
     def set_annotated(self, image):
         try:
             logger.debug(f"resizing annotated image for camera {self._name}")
-            # self.draw_area(image)
+            if self._is_draw:
+                self.draw_area(image)
             target_width = 800
             h, w = image.shape[:2]
 
@@ -94,53 +147,6 @@ class Camera:
 
     def get_tables(self):
         return self._tables
-
-    def get_snapshot(self):
-        try:
-            logger.debug(f"taking snapshot from camera {self._name}")
-            response = requests.get(
-                self._source, timeout=5, headers={"Cache-Control": "no-cache"}
-            )
-
-            if response.status_code != 200:
-                logger.error(
-                    f"failed to take snapshot in Camera {self._name}: "
-                    f"HTTP {response.status_code} URL={self._source}"
-                )
-                return None
-
-            if not response.content or len(response.content) < 50:
-                logger.error(
-                    f"snapshot content is empty or corrupted for camera {self._name}"
-                )
-                return None
-
-            try:
-                img_array = np.frombuffer(response.content, np.uint8)
-                img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-            except Exception as e:
-                logger.error(
-                    f"OpenCV failed decoding image for camera {self._name}: {e}"
-                )
-                return None
-
-            if img is None:
-                logger.error(f"decoded image is None for camera {self._name}")
-                return None
-
-            return img
-
-        except requests.exceptions.Timeout:
-            logger.error(f"snapshot timeout for camera {self._name}")
-            return None
-
-        except requests.exceptions.ConnectionError:
-            logger.error(f"connection error while accessing camera {self._name}\n{self._source}")
-            return None
-
-        except Exception as e:
-            logger.error(f"unexpected error getting snapshot from {self._name}: {e}")
-            return None
 
     def group_items_in_table(self, objects):
         try:

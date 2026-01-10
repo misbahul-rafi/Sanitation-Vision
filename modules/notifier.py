@@ -31,21 +31,17 @@ class Notifier:
 
                 await self.app.initialize()
                 await asyncio.sleep(0.5)
-                await self.app.start()
                 self._initialized = True
                 logger.info("Telegram notifier successfully initialized")
-                await self.send_message("Telegram notifier successfully initialized")
             except Exception as e:
                 logger.critical(f"Gagal initialize Telegram Notifier: {e}")
-                await asyncio.sleep(5)
+                await asyncio.sleep(1)
 
     async def stop(self):
         try:
             if not self._initialized:
                 logger.warning("Notifier stop called but notifier not initialized")
                 return
-
-            await self.app.stop()
             await self.app.shutdown()
             self._initialized = False
             logger.info("Notifier berhasil dihentikan")
