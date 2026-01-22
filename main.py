@@ -12,13 +12,14 @@ class SanitationApp:
     def __init__(self):
         load_dotenv()
         self._shutdown_event = asyncio.Event()
-        self._logger = self._setup_logger()
         
         self._camera_indoor = os.getenv("SOURCE_CAMERA_INDOOR")
         self._camera_outdoor = os.getenv("SOURCE_CAMERA_OUTDOOR")
         self._app_host = os.getenv("APP_HOST")
         self._app_port = int(os.getenv("APP_PORT"))
+        self._logger_stream = os.getenv("LOGGER_STREAM") == "true"
 
+        self._logger = self._setup_logger()
 
         self._cameras = self._create_cameras()
         self._notifier = Notifier()
@@ -52,16 +53,14 @@ class SanitationApp:
                 datefmt="%Y-%m-%d %H:%M:%S"
             )
 
-            stream_handler = logging.StreamHandler()
-            stream_handler.setFormatter(formatter)
-
             file_handler = logging.FileHandler("logs/sanitation.log", encoding="utf-8")
             file_handler.setFormatter(formatter)
-
-            logger.addHandler(stream_handler)
             logger.addHandler(file_handler)
-
-        logger.info("handler ready")
+            
+            if self._logger_stream:
+                stream_handler = logging.StreamHandler()
+                stream_handler.setFormatter(formatter)
+                logger.addHandler(stream_handler)
         return logger
 
 

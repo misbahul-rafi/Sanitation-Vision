@@ -23,24 +23,55 @@ class Camera:
 
     async def stream(self, shutdown_event: asyncio.Event):
         logger.info(f"RTSP stream started for camera {self._name}")
-        self._cap = cv2.VideoCapture(self._source, cv2.CAP_FFMPEG)
 
-        if not self._cap.isOpened():
-            logger.error(f"Failed to open RTSP stream {self._name}")
-            return
+        retry_delay = 2
+        max_failures = 10
+
         while not shutdown_event.is_set():
-            for _ in range(5):
+            logger.info(f"Opening RTSP stream for camera {self._name}")
+            self._cap = cv2.VideoCapture(self._source, cv2.CAP_FFMPEG)
+
+            if not self._cap.isOpened():
+                logger.error(f"Failed to open RTSP stream {self._name}, retrying...")
+                self._cap.release()
+                await asyncio.sleep(retry_delay)
+                continue
+
+            failure_count = 0
+
+            while not shutdown_event.is_set():
                 ret, frame = await asyncio.to_thread(self._cap.read)
-                if not ret:
-                    break
 
-            if ret:
+                if not ret or frame is None:
+                    failure_count += 1
+                    logger.warning(
+                        f"Failed to read frame from {self._name} "
+                        f"({failure_count}/{max_failures})"
+                    )
+
+                    if failure_count >= max_failures:
+                        logger.error(
+                            f"RTSP stream unstable for {self._name}, reconnecting..."
+                        )
+                        break
+
+                    await asyncio.sleep(0.05)
+                    continue
+
+                failure_count = 0
                 self._last_frame = frame
-            else:
-                await asyncio.sleep(0.05)
 
-        self._cap.release()
+                for _ in range(3):
+                    await asyncio.to_thread(self._cap.grab)
+
+            self._cap.release()
+            logger.info(f"RTSP stream released for camera {self._name}")
+            await asyncio.sleep(retry_delay)
+
+        if self._cap:
+            self._cap.release()
         logger.info(f"RTSP stream stopped for camera {self._name}")
+
         
     def get_snapshot(self):
         try:
