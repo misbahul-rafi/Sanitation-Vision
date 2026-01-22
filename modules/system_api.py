@@ -138,3 +138,42 @@ class SystemAPI:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Camera '{camera_name}' not found"
             )
+            
+        @self.router.get("/camera/stream/{camera_name}")
+        async def camera_stream(camera_name: str):
+            camera = self._get_camera_by_name(camera_name)
+
+            if not camera:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Camera '{camera_name}' not found"
+                )
+
+            async def frame_generator():
+                try:
+                    while not self.shutdown_is_set():
+                        frame = camera.get_snapshot()
+                        if frame is None:
+                            await asyncio.sleep(0.05)
+                            continue
+
+                        success, buffer = cv2.imencode(".jpg", frame)
+                        if not success:
+                            await asyncio.sleep(0.05)
+                            continue
+
+                        yield (
+                            b"--frame\r\n"
+                            b"Content-Type: image/jpeg\r\n\r\n" +
+                            buffer.tobytes() +
+                            b"\r\n"
+                        )
+
+                        await asyncio.sleep(0.03)  # ~30 FPS
+                except asyncio.CancelledError:
+                    logger.info(f"Streaming camera {camera_name} stopped")
+
+            return StreamingResponse(
+                frame_generator(),
+                media_type="multipart/x-mixed-replace; boundary=frame"
+            )
