@@ -56,9 +56,11 @@ class SanitationManager:
                         image = camera.get_snapshot()
                         if image is None:
                             continue
+                        time_predict = time.time()
                         objects = self._model.predict(
                             image=image, set_annotated=camera.set_annotated
                         )
+                        logger.info(f'Time predict camera {camera.get_name()} = {time.time() -  time_predict}')
                         camera.set_is_update(True)
                         camera.group_items_in_table(objects)
                         for table in camera.get_tables():
