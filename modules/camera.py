@@ -1,10 +1,9 @@
 import cv2
-import requests
 import numpy as np
 from .table import Table
 import logging
 from collections import Counter
-import asyncio
+import asyncio, time
 
 logger = logging.getLogger("SanitationVision")
 

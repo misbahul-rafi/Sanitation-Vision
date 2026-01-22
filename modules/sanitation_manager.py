@@ -50,17 +50,18 @@ class SanitationManager:
         while not shutdown_event.is_set():
             start_loop = time.time()
             if await self._is_operational_time():
+                logger.info("Starting loop...")
                 for camera in self.cameras:
                     camera_name = camera.get_name()
                     if camera.get_status():
                         image = camera.get_snapshot()
                         if image is None:
                             continue
-                        time_predict = time.time()
+                        start_predict = time.time()
                         objects = self._model.predict(
                             image=image, set_annotated=camera.set_annotated
                         )
-                        logger.info(f'Time predict camera {camera.get_name()} = {time.time() -  time_predict}')
+                        logger.info(f'Time predict {camera.get_name()} = {time.time() - start_predict}')
                         camera.set_is_update(True)
                         camera.group_items_in_table(objects)
                         for table in camera.get_tables():
@@ -109,7 +110,7 @@ class SanitationManager:
                                 table.reset_time()
                     else:
                         logger.info(f"camera {camera_name} is terminated")
-                logger.info(f"Time for 1 loop = {time.time() - start_loop}")
+                logger.info(f"Time count in this loop = {time.time() - start_loop}")
                 await asyncio.sleep(self._predict_interval)
             else:
                 logger.info("SanitationManager stopped")

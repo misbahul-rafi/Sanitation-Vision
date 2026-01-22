@@ -1,5 +1,4 @@
 from .camera import Camera
-from .color_formatter import ColorFormatter
 from .notifier import Notifier
 from .resmon import Resmon
 from .sanitation_manager import SanitationManager

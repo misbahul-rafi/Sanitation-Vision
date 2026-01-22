@@ -1,4 +1,4 @@
-from modules import Camera, ColorFormatter, Notifier, Resmon, SanitationManager, SystemAPI, Table
+from modules import Camera, Notifier, Resmon, SanitationManager, SystemAPI, Table
 import logging
 import os
 import asyncio
@@ -45,15 +45,18 @@ class SanitationApp:
     def _setup_logger(self):
         logger = logging.getLogger("SanitationVision")
         logger.setLevel(logging.INFO)
-        logger.propagate = False
+
         if not logger.handlers:
-            handler = logging.StreamHandler()
-            handler.setFormatter(ColorFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
-            logger.addHandler(handler)
+            stream_handler = logging.StreamHandler()
             file_handler = logging.FileHandler("logs/sanitation.log", encoding="utf-8")
-            file_handler.setFormatter(ColorFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
+
+            logger.addHandler(stream_handler)
             logger.addHandler(file_handler)
+            
+        logger.info('handler ready')
+
         return logger
+
 
 
     def _create_cameras(self):
