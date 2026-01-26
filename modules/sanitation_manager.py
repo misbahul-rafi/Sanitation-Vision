@@ -37,10 +37,21 @@ class SanitationManager:
             self._status = True
         else:
             if self._status:
-                message = f"=====Daily Report=====\n"
-                message += f"Date: {datetime.now().strftime("%d-%b-%Y")}\n\n"
+                for camera in self.cameras:
+                    for table in camera.get_tables():
+                        if table.get_start_time() is not None:
+                            logger.info(
+                                f"finalizing table {table.get_id()} before daily report"
+                            )
+                            table.insert_record()
+                            table.reset_time()
+
+                message = "=====Daily Report=====\n"
+                message += f"Date: {datetime.now().strftime('%d-%b-%Y')}\n\n"
+
                 for camera in self.cameras:
                     message += camera.daily_report()
+
                 await self.notifier.send_message(message)
                 self._status = False
         return self._status
@@ -58,9 +69,7 @@ class SanitationManager:
                         if image is None:
                             continue
                         start_predict = time.time()
-                        objects = self._model.predict(
-                            image=image, set_annotated=camera.set_annotated
-                        )
+                        objects = self._model.predict(image, camera.set_annotated)
                         logger.info(f'Time predict {camera.get_name()} = {time.time() - start_predict}')
                         camera.set_is_update(True)
                         camera.group_items_in_table(objects)

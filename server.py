@@ -1,34 +1,49 @@
 import cv2
-import asyncio
+import os
+import time
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 
+IMAGE_DIR = "images"
+DISPLAY_DURATION = 30  # detik per gambar
+FPS = 10               # fps stream (beban ringan)
+
 app = FastAPI()
 
-cap = cv2.VideoCapture(0)
+image_files = sorted([
+    os.path.join(IMAGE_DIR, f)
+    for f in os.listdir(IMAGE_DIR)
+    if f.lower().endswith((".jpg", ".jpeg", ".png"))
+])
 
-if not cap.isOpened():
-    raise RuntimeError("Tidak bisa membuka kamera")
+if not image_files:
+    raise RuntimeError("Folder images kosong")
 
 def generate_frames():
     while True:
-        success, frame = cap.read()
-        if not success:
-            break
+        for image_path in image_files:
+            frame = cv2.imread(image_path)
+            if frame is None:
+                continue
 
-        ret, buffer = cv2.imencode(".jpg", frame)
-        if not ret:
-            continue
+            start_time = time.time()
 
-        frame_bytes = buffer.tobytes()
+            while time.time() - start_time < DISPLAY_DURATION:
+                ret, buffer = cv2.imencode(".jpg", frame)
+                if not ret:
+                    break
 
-        yield (
-            b"--frame\r\n"
-            b"Content-Type: image/jpeg\r\n\r\n" + frame_bytes + b"\r\n"
-        )
+                yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/jpeg\r\n\r\n"
+                    + buffer.tobytes()
+                    + b"\r\n"
+                )
+
+                time.sleep(1 / FPS)
 
 @app.get("/stream")
-async def stream():
+def stream():
     return StreamingResponse(
         generate_frames(),
         media_type="multipart/x-mixed-replace; boundary=frame"
@@ -36,4 +51,4 @@ async def stream():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
