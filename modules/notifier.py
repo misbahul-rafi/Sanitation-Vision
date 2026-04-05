@@ -11,10 +11,8 @@ class Notifier:
         self._chat_id = os.getenv("TELEGRAM_CHAT_ID")
         self.app = ApplicationBuilder().token(self._bot_token).build()
         self._initialized = False
-
         async def error_handler(update, context):
             logger.error("Telegram internal error occurred", exc_info=context.error)
-
         self.app.add_error_handler(error_handler)
 
     async def initialize(self):
@@ -26,9 +24,7 @@ class Notifier:
                 self.app = ApplicationBuilder().token(self._bot_token).build()
                 async def error_handler(update, context):
                     logger.error("Telegram internal error occurred", exc_info=context.error)
-                    
                 self.app.add_error_handler(error_handler)
-
                 await self.app.initialize()
                 await asyncio.sleep(0.5)
                 self._initialized = True
@@ -62,33 +58,26 @@ class Notifier:
         if not self._initialized:
             logger.warning("notifier is'n initialize")
             return
-
         try:
             caption = (
                 f"Area {camera_name} Meja no. {table_id} "
                 f"terdeteksi belum dibersihkan selama {time_dirtied} menit"
             )
-
             if image is None:
                 logger.warning(f"Tidak ada image untuk alert table {table_id}, mengirim pesan teks saja")
                 await self.send_message(caption)
                 return
-
             success, buffer = cv2.imencode('.jpg', image, [cv2.IMWRITE_JPEG_QUALITY, 10])
             if not success:
                 logger.error("Gagal mengencode image untuk dikirim ke Telegram")
                 await self.send_message(caption + " (tanpa gambar karena error encode)")
                 return
-
             bytes_image = buffer.tobytes()
-
             await self.app.bot.send_photo(
                 chat_id=self._chat_id,
                 photo=bytes_image,
                 caption=caption
             )
-
             logger.debug(f"Alert terkirim untuk table {table_id} di camera {camera_name}")
-
         except Exception as e:
             logger.error(f"Error saat mengirim alert Telegram: {e}")

@@ -1,10 +1,9 @@
 dataset/
 env/
 labelImg/
-runs/detect/predict/
-runs/detect/predict*
-runs/detect/old*
-runs/detect/*/last.pt
+ignoregit/
+ignoregit/*
+runs/*
 snapshots/
 testimage/
 ffmpeg/

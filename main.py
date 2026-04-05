@@ -11,37 +11,33 @@ from fastapi.middleware.cors import CORSMiddleware
 class SanitationApp:
     def __init__(self):
         load_dotenv()
-        self._shutdown_event = asyncio.Event()
-        
         self._camera_indoor = os.getenv("SOURCE_CAMERA_INDOOR")
         self._camera_outdoor = os.getenv("SOURCE_CAMERA_OUTDOOR")
         self._app_host = os.getenv("APP_HOST")
         self._app_port = int(os.getenv("APP_PORT"))
         self._logger_stream = os.getenv("LOGGER_STREAM") == "true"
+        
+        self._shutdown_event = asyncio.Event()
 
         self._logger = self._setup_logger()
+        self._setup_routes()
+        self._setup_cors()
 
         self._cameras = self._create_cameras()
         self._notifier = Notifier()
         self._resmon = Resmon()
-
         self.manager = SanitationManager(
             self._notifier,
             self._cameras,
             status=True,
-            
         )
-
         self.system_api = SystemAPI(
             shutdown_is_set=self._shutdown_event.is_set,
             cameras=self._cameras,
             get_resmon=self._resmon.snapshot,
             manager_status = self.manager.get_manager_status
         )
-
         self.app = FastAPI(lifespan=self._lifespan)
-        self._setup_routes()
-        self._setup_cors()
 
     def _setup_logger(self):
         logger = logging.getLogger("SanitationVision")

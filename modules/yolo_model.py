@@ -1,6 +1,5 @@
 from ultralytics import YOLO
-import logging
-import os, time
+import logging, os
 
 logger = logging.getLogger("SanitationVision")
 class YOLOModel:
@@ -14,7 +13,6 @@ class YOLOModel:
             logger.critical(f"failed to load YOLO model: {e}")
             raise
         
-
     def predict(self, image, set_annotated):
         logger.debug("running prediction...")
         try:
@@ -28,23 +26,19 @@ class YOLOModel:
         except Exception as e:
             logger.error(f"YOLO prediction failed: {e}")
             return None, None
-        
         if not results or len(results) == 0:
             logger.warning("YOLO returned empty result")
             return None, None
-
         try:
             objects = results[0]
         except Exception as e:
             logger.error(f"failed reading YOLO result object: {e}")
             return None, None
-        
         try:
             annotated_image = objects.plot()
         except Exception as e:
             logger.error(f"failed generating annotated image: {e}")
             annotated_image = None
-
         if annotated_image is not None:
             try:
                 set_annotated(annotated_image)

@@ -50,7 +50,6 @@ class SystemAPI:
                                 "manager": self._manager_status(),
                                 "cameras": [camera.get_camera_data() for camera in self._cameras]
                             }
-
                             logger.debug("Sending SSE update to client")
                             yield f"data: {json.dumps(payload)}\n\n"
 
@@ -61,29 +60,23 @@ class SystemAPI:
                         except Exception as e:
                             logger.error(f"Error during loop SSE: {e}")
                             yield "event: error\ndata: internal error\n\n"
-
                         await asyncio.sleep(1)
-
                 except asyncio.CancelledError:
                     logger.info("SSE connection canceled by client")
                     return
-
             return StreamingResponse(events(), media_type="text/event-stream")
 
         @self.router.get("/camera/{camera_name}")
         async def get_camera_image(camera_name: str):
             logger.debug(f"Request image camera: {camera_name}")
             camera = self._get_camera_by_name(camera_name)
-
             if not camera:
                 logger.warning(f"Request image failed. camera {camera_name} not found")
                 raise HTTPException(status_code=404, detail=f"Camera '{camera_name}' not found")
-
             annotated = camera.get_annotated()
             if annotated is None:
                 logger.warning(f"Image kamera {camera_name} belum siap")
                 raise HTTPException(status_code=404, detail="Image not ready")
-
             try:
                 success, buffer = cv2.imencode(".jpg", annotated)
                 if not success:
@@ -92,7 +85,6 @@ class SystemAPI:
             except Exception as e:
                 logger.error(f"Exception saat encoding image kamera {camera_name}: {e}")
                 raise HTTPException(status_code=500, detail="Image processing error")
-
             logger.debug(f"Berhasil mengembalikan image kamera {camera_name}")
             return Response(
                 content=buffer.tobytes(),
@@ -121,6 +113,7 @@ class SystemAPI:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Camera '{camera_name}' not found"
             )
+            
         @self.router.get("/camera/control/draw/{camera_name}")
         def get_camera_draw(camera_name: str, action: bool):
             camera = self._get_camera_by_name(camera_name)
@@ -138,3 +131,4 @@ class SystemAPI:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Camera '{camera_name}' not found"
             )
+            

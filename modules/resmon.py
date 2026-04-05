@@ -60,19 +60,16 @@ class Resmon:
                             cpu_temp = round(temps["cpu_thermal"][0].current, 1)
                     except Exception as e:
                         logger.warning(f"Gagal membaca temperature CPU: {e}")
-
                 try:
                     cpu_percent = round(psutil.cpu_percent(interval=.5, percpu=False), 1)
                 except Exception as e:
                     logger.error(f"Gagal membaca CPU usage: {e}")
                     cpu_percent = None
-
                 try:
                     mem = psutil.virtual_memory()
                 except Exception as e:
                     logger.error(f"Gagal membaca Memory usage: {e}")
                     mem = None
-
                 try:
                     disk = psutil.disk_usage(self.disk_path)
                 except Exception as e:
