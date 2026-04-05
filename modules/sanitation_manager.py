@@ -61,7 +61,6 @@ class SanitationManager:
         while not shutdown_event.is_set():
             start_loop = time.time()
             if await self._is_operational_time():
-                logger.info("Starting loop...")
                 for camera in self.cameras:
                     camera_name = camera.get_name()
                     if camera.get_status():
