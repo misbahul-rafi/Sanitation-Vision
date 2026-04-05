@@ -70,7 +70,7 @@ class SanitationManager:
                             continue
                         start_predict = time.time()
                         objects = self._model.predict(image, camera.set_annotated)
-                        logger.info(f'Time predict {camera.get_name()} = {time.time() - start_predict}')
+                        # logger.info(f'Time predict {camera.get_name()} = {time.time() - start_predict}')
                         camera.set_is_update(True)
                         camera.group_items_in_table(objects)
                         for table in camera.get_tables():

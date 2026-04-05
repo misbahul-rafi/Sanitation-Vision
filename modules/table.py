@@ -3,8 +3,6 @@ from collections import Counter
 import logging
 from datetime import datetime
 
-dirty_object = ["gelas", "piring", "asbak", "botol"]
-
 logger = logging.getLogger("SanitationVision")
 
 class Table:
@@ -108,34 +106,33 @@ class Table:
         return message
 
     def update_status(self):
+        dirty_object = ["gelas", "piring", "asbak", "botol"]
+        customer_object = ["pelanggan", "handphone", "laptop"]
         try:
-            has_customer = "pelanggan" in self._items
-            has_dirty = any(obj in self._items for obj in dirty_object)
-            if has_customer:
-                current_status = "used"
-            elif has_dirty:
-                current_status = "dirty"
-            else:
-                current_status = "clean"
-            self._status_buffer.append(current_status)
-            if len(self._status_buffer) > 6:
-                self._status_buffer.pop(0)
-            if not self._status_buffer:
-                logger.warning(f"table {self._id} status buffer empty, skipping update")
-                return
-            counts = Counter(self._status_buffer)
-            new_status = counts.most_common(1)[0][0]
-            if new_status != self._status:
-                if new_status == "clean":
-                    self.insert_record()
-                logger.info(
-                    f"table {self._id} status changed from {self._status} to {new_status}"
-                )
-                self._status = new_status
-                return True
+                current_status = ""
+                has_customer = any(obj in self._items for obj in customer_object)
+                has_dirty = any(obj in self._items for obj in dirty_object)
+                if has_customer:
+                    current_status = "used"
+                elif has_dirty:
+                    current_status = "dirty"
+                else:
+                    current_status = "clean"
+                self._status_buffer.append(current_status)
+                if len(self._status_buffer) > 6:
+                    self._status_buffer.pop(0)
+                counts = Counter(self._status_buffer)
+                new_status = counts.most_common(1)[0][0]
+                if new_status != self._status:
+                    if new_status == "clean":
+                        self.insert_record()
+                    # logger.info(
+                    #     f"table {self._id} status changed from {self._status} to {new_status}"
+                    # )
+                    self._status = new_status
+                    return True
         except Exception as e:
-            logger.error(f"failed updating status table {self._id}: {e}")
-
+                logger.error(f"failed updating status table {self._id}: {e}")
         return False
 
     def contains_point(self, x, y):

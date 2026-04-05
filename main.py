@@ -11,6 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 class SanitationApp:
     def __init__(self):
         load_dotenv()
+        
+        self.app = FastAPI(lifespan=self._lifespan)
+
+        
         self._camera_indoor = os.getenv("SOURCE_CAMERA_INDOOR")
         self._camera_outdoor = os.getenv("SOURCE_CAMERA_OUTDOOR")
         self._app_host = os.getenv("APP_HOST")
@@ -18,11 +22,7 @@ class SanitationApp:
         self._logger_stream = os.getenv("LOGGER_STREAM") == "true"
         
         self._shutdown_event = asyncio.Event()
-
-        self._logger = self._setup_logger()
-        self._setup_routes()
-        self._setup_cors()
-
+        
         self._cameras = self._create_cameras()
         self._notifier = Notifier()
         self._resmon = Resmon()
@@ -37,7 +37,9 @@ class SanitationApp:
             get_resmon=self._resmon.snapshot,
             manager_status = self.manager.get_manager_status
         )
-        self.app = FastAPI(lifespan=self._lifespan)
+        self._setup_routes()
+        self._setup_cors()
+        self._logger = self._setup_logger()
 
     def _setup_logger(self):
         logger = logging.getLogger("SanitationVision")
@@ -91,18 +93,27 @@ class SanitationApp:
     @asynccontextmanager
     async def _lifespan(self, app: FastAPI):
         await self._notifier.initialize()
+
+        self._camera_tasks = []
         for cam in self._cameras:
-            asyncio.create_task(cam.stream(self._shutdown_event))
+            task = asyncio.create_task(cam.stream(self._shutdown_event))
+            self._camera_tasks.append(task)
+
         manager_task = asyncio.create_task(
             self.manager.run(self._shutdown_event)
         )
+
         resmon_task = asyncio.create_task(
             self._resmon.run(self._shutdown_event)
         )
+
         yield
+
         self._shutdown_event.set()
         await self._notifier.stop()
+
         await asyncio.gather(
+            *self._camera_tasks,
             manager_task,
             resmon_task,
             return_exceptions=True

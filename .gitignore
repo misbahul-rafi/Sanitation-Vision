@@ -11,3 +11,4 @@ ffmpeg/
 __pycache__/
 logs/
 .env
+yolov8n.pt
