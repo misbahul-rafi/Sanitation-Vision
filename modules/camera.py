@@ -192,7 +192,6 @@ class Camera:
                 raise RuntimeError(f"Cannot open RTSP stream {self._name}")
             self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             logger.info(f"Camera {self._name} initiallized")
-            await self.get_frame()
             
             
     async def stop(self):
@@ -211,5 +210,4 @@ class Camera:
             if not ret or frame is None:
                 logger.warning(f"Failed to read frame from {self._name}")
                 return None
-            logger.info("frame getted")
             return frame
