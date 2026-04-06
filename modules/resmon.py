@@ -109,3 +109,4 @@ class Resmon:
     def snapshot(self) -> Dict[str, Any]:
         logger.debug("Snapshot Resmon diminta")
         return self._latest
+        

@@ -15,6 +15,7 @@ class Camera:
         self._cap = None
         self._annotated = None
         self._tables = tables
+        self._lock = asyncio.Lock()
         
     def get_name(self):
         return self._name
@@ -47,6 +48,8 @@ class Camera:
         except Exception as e:
             logger.error(f"failed to process annotated image on {self._name}: {e}")
             self._annotated = None
+    
+    
     async def stream(self, shutdown_event: asyncio.Event):
         logger.info(f"RTSP stream started for camera {self._name}")
         retry_delay = 2
@@ -84,7 +87,9 @@ class Camera:
             await asyncio.sleep(retry_delay)
         if self._cap:
             self._cap.release()
-        logger.info(f"RTSP stream stopped for camera {self._name}")   
+        logger.info(f"RTSP stream stopped for camera {self._name}")
+        
+        
     def get_snapshot(self):
         try:
             logger.debug(f"getting frame from stream for camera {self._name}")
@@ -177,3 +182,34 @@ class Camera:
             "status_counts": self.get_status_count(),
             "tables": [table.get_table_data() for table in self._tables],
         }
+        
+    async def start(self):
+        """Buka koneksi RTSP satu kali"""
+        if self._cap is None:
+            logger.info(f"Opening RTSP stream for {self._name}")
+            self._cap = cv2.VideoCapture(self._source, cv2.CAP_FFMPEG)
+            if not self._cap.isOpened():
+                raise RuntimeError(f"Cannot open RTSP stream {self._name}")
+            self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            logger.info(f"Camera {self._name} initiallized")
+            await self.get_frame()
+            
+            
+    async def stop(self):
+        """Tutup koneksi RTSP saat shutdown"""
+        if self._cap:
+            self._cap.release()
+            self._cap = None
+            logger.info(f"RTSP stream closed for {self._name}")
+            
+    async def get_frame(self):
+        """Ambil frame baru saat dibutuhkan"""
+        if self._cap is None:
+            raise RuntimeError(f"Camera {self._name} is not started")
+        async with self._lock:  # pastikan thread-safe
+            ret, frame = await asyncio.to_thread(self._cap.read)
+            if not ret or frame is None:
+                logger.warning(f"Failed to read frame from {self._name}")
+                return None
+            logger.info("frame getted")
+            return frame
