@@ -93,8 +93,8 @@ class SanitationApp:
     @asynccontextmanager
     async def _lifespan(self, app: FastAPI):
         await self._notifier.initialize()
-        for camera in self._cameras:
-            await camera.start()
+        # for camera in self._cameras:
+        #     await camera.start()
 
         # self._camera_tasks = []
         # for cam in self._cameras:
