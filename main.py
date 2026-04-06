@@ -93,13 +93,10 @@ class SanitationApp:
     @asynccontextmanager
     async def _lifespan(self, app: FastAPI):
         await self._notifier.initialize()
-        # for camera in self._cameras:
-        #     await camera.start()
-
-        # self._camera_tasks = []
-        # for cam in self._cameras:
-        #     task = asyncio.create_task(cam.stream(self._shutdown_event))
-        #     self._camera_tasks.append(task)
+        self._camera_tasks = []
+        for cam in self._cameras:
+            task = asyncio.create_task(cam.stream(self._shutdown_event))
+            self._camera_tasks.append(task)
 
         manager_task = asyncio.create_task(
             self.manager.run(self._shutdown_event)
@@ -117,7 +114,7 @@ class SanitationApp:
             await camera.stop()
 
         await asyncio.gather(
-            # *self._camera_tasks,
+            *self._camera_tasks,
             manager_task,
             resmon_task,
             return_exceptions=True
