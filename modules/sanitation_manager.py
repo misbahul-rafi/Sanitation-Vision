@@ -64,8 +64,7 @@ class SanitationManager:
                 for camera in self.cameras:
                     camera_name = camera.get_name()
                     if camera.get_status():
-                        # image = camera.get_snapshot()
-                        image = await camera.get_frame()
+                        image = camera.get_snapshot()
                         if image is None:
                             continue
                         start_predict = time.time()
