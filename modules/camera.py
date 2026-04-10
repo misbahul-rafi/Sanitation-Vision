@@ -78,8 +78,6 @@ class Camera:
                     continue
                 failure_count = 0
                 self._last_frame = frame
-                for _ in range(3):
-                    await asyncio.to_thread(self._cap.grab)
             self._cap.release()
             logger.info(f"RTSP stream released for camera {self._name}")
             await asyncio.sleep(retry_delay)
