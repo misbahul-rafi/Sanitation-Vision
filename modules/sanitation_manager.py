@@ -55,11 +55,51 @@ class SanitationManager:
                 await self.notifier.send_message(message)
                 self._status = False
         return self._status
+    
+    def _time_now(self):
+        return time.time()
+    
+    async def handle_table(self, table, camera_name, get_annotated, now):
+        current_status, buffer_status = table.update_status()
+        start_time = table.get_start_time()
+        last_alert = table.get_last_alert()
+        match(current_status, buffer_status):
+            case("dirty", "dirty"):
+                if start_time != None:
+                    if (now - last_alert > self._alert_interval):
+                        table.set_last_alert(now)
+                        logger.info(
+                            f"send alert for table {table.get_id()}"
+                        )
+                        await self.notifier.send_alert(
+                            table_id=table.get_id(),
+                            camera_name=camera_name,
+                            time_dirtied=round(
+                                (now - table.get_start_time())
+                                / 60
+                            ),
+                            image=get_annotated(),
+                        )
+                else:
+                    logger.info(f"area {camera_name} table {table.get_id()} set time")
+                    table.set_start_time(now)
+                    table.set_last_alert(now)
+                    logger.debug(f"area {camera_name} table {table.get_id()} start_time and last_alert is setted")
+                    logger.info(f"{camera_name} table {table.get_id()} is {table.get_status()} for {time.time() - table.get_start_time()} second")
+                    await self.notifier.send_alert(
+                        table_id=table.get_id(),
+                        camera_name=camera_name,
+                        image=get_annotated(),
+                        time_dirtied=1,)
+            case(_, "dirty"):
+                return
+            case _:
+                table.reset_time()
 
     async def run(self, shutdown_event: asyncio.Event):
         logger.info("SanitationVision started")
         while not shutdown_event.is_set():
-            start_loop = time.time()
+            start_loop = self._time_now()
             if await self._is_operational_time():
                 for camera in self.cameras:
                     camera_name = camera.get_name()
@@ -67,58 +107,17 @@ class SanitationManager:
                         image = camera.get_snapshot()
                         if image is None:
                             continue
-                        start_predict = time.time()
                         objects = self._model.predict(image, camera.set_annotated)
-                        # logger.info(f'Time predict {camera.get_name()} = {time.time() - start_predict}')
+                        end_predict = self._time_now()
                         camera.set_is_update(True)
                         camera.group_items_in_table(objects)
                         for table in camera.get_tables():
-                            table.update_status()
-                            if table.get_status() == "dirty":
-                                if table.get_start_time() != None:
-                                    if (
-                                        time.time() - table.get_last_alert()
-                                        > self._alert_interval
-                                    ):
-                                        table.set_last_alert()
-                                        logger.info(
-                                            f"send alert for table {table.get_id()}"
-                                        )
-                                        await self.notifier.send_alert(
-                                            table_id=table.get_id(),
-                                            camera_name=camera_name,
-                                            time_dirtied=round(
-                                                (time.time() - table.get_start_time())
-                                                / 60
-                                            ),
-                                            image=camera.get_annotated(),
-                                        )
-                                    else:
-                                        continue
-                                else:
-                                    logger.info(
-                                        f"area {camera_name} table {table.get_id()} set time"
-                                    )
-                                    table.set_start_time()
-                                    table.set_last_alert()
-                                    logger.debug(
-                                        f"area {camera_name} table {table.get_id()} start_time and last_alert is setted"
-                                    )
-                                    logger.info(
-                                        f"{camera_name} table {table.get_id()} is {table.get_status()} for {time.time() - table.get_start_time()} second"
-                                    )
-                                    await self.notifier.send_alert(
-                                        table_id=table.get_id(),
-                                        camera_name=camera_name,
-                                        image=camera.get_annotated(),
-                                        time_dirtied=1,
-                                    )
-                            else:
-                                logger.debug(f"{table.get_id()} = {table.get_status()}")
-                                table.reset_time()
+                            await self.handle_table(table=table, camera_name=camera_name, get_annotated=camera.get_snapshot,
+                            now=end_predict
+                            )
                     else:
                         logger.info(f"camera {camera_name} is terminated")
-                logger.info(f"Time count in this loop = {time.time() - start_loop}")
+                logger.info(f"Time count in this loop = {self._time_now() - start_loop}")
                 await asyncio.sleep(self._predict_interval)
             else:
                 logger.info("SanitationManager stopped")

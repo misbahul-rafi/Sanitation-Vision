@@ -67,7 +67,7 @@ class Notifier:
                 logger.warning(f"Tidak ada image untuk alert table {table_id}, mengirim pesan teks saja")
                 await self.send_message(caption)
                 return
-            success, buffer = cv2.imencode('.jpg', image, [cv2.IMWRITE_JPEG_QUALITY, 10])
+            success, buffer = cv2.imencode('.jpg', image, [cv2.IMWRITE_JPEG_QUALITY, 50])
             if not success:
                 logger.error("Gagal mengencode image untuk dikirim ke Telegram")
                 await self.send_message(caption + " (tanpa gambar karena error encode)")

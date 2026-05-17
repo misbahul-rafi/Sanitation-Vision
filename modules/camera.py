@@ -1,6 +1,9 @@
 import cv2, asyncio, logging, numpy as np
 from .table import Table
 from collections import Counter
+import os
+
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
 
 logger = logging.getLogger("SanitationVision")
 

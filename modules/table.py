@@ -1,5 +1,5 @@
 import time, os, csv
-from collections import Counter
+from collections import Counter, deque
 import logging
 from datetime import datetime
 
@@ -13,7 +13,7 @@ class Table:
             self._id = table_id
             self._area = area
             self._status = "used"
-            self._status_buffer = ["used"] * 6
+            self._status_buffer = deque(["used"] * 6, maxlen=6)
             self._start_time = None
             self._last_alert = None
             self._items = items if isinstance(items, list) else []
@@ -41,14 +41,12 @@ class Table:
         return self._status_buffer
     def get_start_time(self):
         return self._start_time
-    def set_start_time(self):
-        self._start_time = time.time()
-        logger.debug(f"table {self._id} start_time set")
+    def set_start_time(self, now):
+        self._start_time = now
     def get_last_alert(self):
         return self._last_alert
-    def set_last_alert(self):
-        self._last_alert = time.time()
-        logger.debug(f"table {self._id} last_alert set")
+    def set_last_alert(self, now):
+        self._last_alert = now
     def clear_data(self):
         self._status = "clean"
         self._status_buffer = ["clean"] * 6
@@ -119,21 +117,14 @@ class Table:
                 else:
                     current_status = "clean"
                 self._status_buffer.append(current_status)
-                if len(self._status_buffer) > 6:
-                    self._status_buffer.pop(0)
                 counts = Counter(self._status_buffer)
-                new_status = counts.most_common(1)[0][0]
-                if new_status != self._status:
-                    if new_status == "clean":
-                        self.insert_record()
-                    # logger.info(
-                    #     f"table {self._id} status changed from {self._status} to {new_status}"
-                    # )
-                    self._status = new_status
-                    return True
+                final_status = counts.most_common(1)[0][0]
+                if final_status != self._status and final_status != "dirty":
+                    self.insert_record()
+                self._status = final_status
+                return current_status, self._status
         except Exception as e:
                 logger.error(f"failed updating status table {self._id}: {e}")
-        return False
 
     def contains_point(self, x, y):
         try:

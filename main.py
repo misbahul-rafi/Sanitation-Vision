@@ -48,13 +48,10 @@ class SanitationApp:
         if not logger.handlers:
             formatter = logging.Formatter(
                 "%(asctime)s - %(levelname)s - %(name)s - %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S"
-            )
-
+                datefmt="%Y-%m-%d %H:%M:%S")
             file_handler = logging.FileHandler("logs/sanitation.log", encoding="utf-8")
             file_handler.setFormatter(formatter)
             logger.addHandler(file_handler)
-            
             if self._logger_stream:
                 stream_handler = logging.StreamHandler()
                 stream_handler.setFormatter(formatter)
@@ -105,14 +102,11 @@ class SanitationApp:
         resmon_task = asyncio.create_task(
             self._resmon.run(self._shutdown_event)
         )
-
         yield
-
         self._shutdown_event.set()
         await self._notifier.stop()
-        for camera in self._cameras:
-            await camera.stop()
-
+        # for camera in self._cameras:
+        #     await camera.stop()
         await asyncio.gather(
             *self._camera_tasks,
             manager_task,
