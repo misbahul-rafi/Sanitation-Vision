@@ -1,6 +1,5 @@
 from .camera import Camera
 from .notifier import Notifier
-from .yolo_model import YOLOModel
 import asyncio
 import time
 from datetime import datetime
@@ -21,7 +20,6 @@ class SanitationManager:
         self.notifier = notifier
         self.cameras = cameras
         self._status = status
-        self._model = YOLOModel()
 
         self._open_hour = datetime.strptime(os.getenv("OPEN_HOUR"), "%H:%M").time()
         self._close_hour = datetime.strptime(os.getenv("CLOSE_HOUR"), "%H:%M").time()
@@ -107,7 +105,7 @@ class SanitationManager:
                         image = camera.get_snapshot()
                         if image is None:
                             continue
-                        objects = self._model.predict(image, camera.set_annotated)
+                        objects = camera.predict(image, camera.set_annotated)
                         end_predict = self._time_now()
                         camera.set_is_update(True)
                         camera.group_items_in_table(objects)

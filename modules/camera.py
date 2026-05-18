@@ -2,8 +2,10 @@ import cv2, asyncio, logging, numpy as np
 from .table import Table
 from collections import Counter
 import os
+from ultralytics import YOLO
 
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp"
+base_dir = os.getenv("BASE_DIR")
 
 logger = logging.getLogger("SanitationVision")
 
@@ -18,6 +20,7 @@ class Camera:
         self._cap = None
         self._annotated = None
         self._tables = tables
+        self._model = YOLO(f"{os.getenv('BASE_DIR')}/runs/detect/{self._name}/weights/best.pt")
         
     def get_name(self):
         return self._name
@@ -181,3 +184,37 @@ class Camera:
             "status_counts": self.get_status_count(),
             "tables": [table.get_table_data() for table in self._tables],
         }
+        
+    def predict(self, image, set_annotated):
+        logger.debug("running prediction...")
+        try:
+            results = self._model.predict(
+                image,
+                verbose=False,
+                save=False,
+                imgsz=640,
+                exist_ok=True
+            )
+        except Exception as e:
+            logger.error(f"YOLO prediction failed: {e}")
+            return None, None
+        if not results or len(results) == 0:
+            logger.warning("YOLO returned empty result")
+            return None, None
+        try:
+            objects = results[0]
+        except Exception as e:
+            logger.error(f"failed reading YOLO result object: {e}")
+            return None, None
+        try:
+            annotated_image = objects.plot()
+        except Exception as e:
+            logger.error(f"failed generating annotated image: {e}")
+            annotated_image = None
+        if annotated_image is not None:
+            try:
+                set_annotated(annotated_image)
+            except Exception as e:
+                logger.error(f"failed sending annotated image to camera: {e}")
+        logger.debug("prediction completed successfully")
+        return objects
