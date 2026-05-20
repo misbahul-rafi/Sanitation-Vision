@@ -33,7 +33,7 @@ class Camera:
     def set_is_update(self, value):
         self._is_update = value
     def set_is_draw(self, value):
-        self._is_draw = value    
+        self._is_draw = value
     def get_tables(self):
         return self._tables
     def get_annotated(self):

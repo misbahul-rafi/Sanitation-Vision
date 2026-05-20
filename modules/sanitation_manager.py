@@ -110,7 +110,7 @@ class SanitationManager:
                         camera.set_is_update(True)
                         camera.group_items_in_table(objects)
                         for table in camera.get_tables():
-                            await self.handle_table(table=table, camera_name=camera_name, get_annotated=camera.get_snapshot,
+                            await self.handle_table(table=table, camera_name=camera_name, get_annotated=camera.get_annotated,
                             now=end_predict
                             )
                     else:

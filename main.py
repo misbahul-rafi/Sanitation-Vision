@@ -8,12 +8,13 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
+
+
 class SanitationApp:
     def __init__(self):
         load_dotenv()
         
         self.app = FastAPI(lifespan=self._lifespan)
-
         
         self._camera_indoor = os.getenv("SOURCE_CAMERA_INDOOR")
         self._camera_outdoor = os.getenv("SOURCE_CAMERA_OUTDOOR")
