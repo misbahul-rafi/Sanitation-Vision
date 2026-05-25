@@ -63,6 +63,7 @@ class Table:
         return {
             "id": self._id,
             "status": self._status,
+            "buffer": self._status_buffer
         }
     def insert_items(self, item_name):
         try:
