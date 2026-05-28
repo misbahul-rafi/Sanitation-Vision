@@ -49,7 +49,7 @@ class Table:
         self._last_alert = now
     def clear_data(self):
         self._status = "clean"
-        self._status_buffer = ["clean"] * 6
+        self._status_buffer = deque(["clean"] * 6, maxlen=6)
         self._daily_records = []
         self.clear_items()
         self.reset_time()
@@ -63,7 +63,6 @@ class Table:
         return {
             "id": self._id,
             "status": self._status,
-            "buffer": list(self._status_buffer)
         }
     def insert_items(self, item_name):
         try:
