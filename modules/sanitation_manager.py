@@ -15,11 +15,10 @@ class SanitationManager:
         self,
         notifier: Notifier,
         cameras: list[Camera],
-        status=True,
     ):
         self.notifier = notifier
         self.cameras = cameras
-        self._status = status
+        self._status = False
 
         self._open_hour = datetime.strptime(os.getenv("OPEN_HOUR"), "%H:%M").time()
         self._close_hour = datetime.strptime(os.getenv("CLOSE_HOUR"), "%H:%M").time()

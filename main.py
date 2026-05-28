@@ -30,7 +30,6 @@ class SanitationApp:
         self.manager = SanitationManager(
             self._notifier,
             self._cameras,
-            status=True,
         )
         self.system_api = SystemAPI(
             shutdown_is_set=self._shutdown_event.is_set,
