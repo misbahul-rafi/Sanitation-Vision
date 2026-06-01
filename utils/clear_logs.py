@@ -9,9 +9,8 @@ os.makedirs(LOG_DIR, exist_ok=True)
 with open(os.path.join(LOG_DIR, "sanitation.log"), "w", encoding="utf-8"):
     pass
 
-# history.csv
 with open(
-    os.path.join(LOG_DIR, "history.csv"),
+    os.path.join(LOG_DIR, "histories.csv"),
     "w",
     newline="",
     encoding="utf-8"

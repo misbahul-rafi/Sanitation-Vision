@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>{{ title }}</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+
+    main {
+      display: flex;
+      gap: 20px;
+    }
+
+    section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      flex: 1;
+    }
+
+    img {
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    .buttons {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .active {
+      background: #333;
+      color: white;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>{{ title }}</h1>
+
+  <main>
+
+    <section>
+      <h2>Indoor</h2>
+
+      <img src="/stream/indoor">
+
+      <div class="buttons">
+
+        {% for item in ['clean', 'used', 'dirty'] %}
+
+        <form action="/set/indoor/{{ item }}">
+          <button
+            class="{% if status['indoor'] == item %}active{% endif %}"
+            {% if status['indoor'] == item %}disabled{% endif %}
+          >
+            {{ item }}
+          </button>
+        </form>
+
+        {% endfor %}
+
+      </div>
+    </section>
+
+    <section>
+      <h2>Outdoor</h2>
+
+      <img src="/stream/outdoor">
+
+      <div class="buttons">
+
+        {% for item in ['clean', 'used', 'dirty'] %}
+
+        <form action="/set/outdoor/{{ item }}">
+          <button
+            class="{% if status['outdoor'] == item %}active{% endif %}"
+            {% if status['outdoor'] == item %}disabled{% endif %}
+          >
+            {{ item }}
+          </button>
+        </form>
+
+        {% endfor %}
+
+      </div>
+    </section>
+
+  </main>
+
+</body>
+
+</html>
