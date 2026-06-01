@@ -17,7 +17,8 @@ class SystemAPI:
         shutdown_is_set,
         get_resmon,
         cameras: list[Camera],
-        manager_status
+        manager_status,
+        send_daily_report
     ):
         logger.debug("Inisialisasi SystemAPI")
         self.router = APIRouter()
@@ -25,6 +26,7 @@ class SystemAPI:
         self.shutdown_is_set = shutdown_is_set
         self.get_resmon = get_resmon
         self._manager_status = manager_status
+        self.send_daily_report = send_daily_report
         self._setup_routes()
 
         
@@ -114,21 +116,27 @@ class SystemAPI:
                 detail=f"Camera '{camera_name}' not found"
             )
             
-        @self.router.get("/camera/control/draw/{camera_name}")
-        def get_camera_draw(camera_name: str, action: bool):
-            camera = self._get_camera_by_name(camera_name)
-            if camera:
-                camera.set_is_draw(action)
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK,
-                    content={
-                        "camera": camera_name,
-                        "action": action,
-                        "status": "success"
-                    }
+        @self.router.get("/camera/control/draw")
+        def get_camera_draw(action: bool):
+            if not self._cameras:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No cameras found"
                 )
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Camera '{camera_name}' not found"
+            for camera in self._cameras:
+                camera.set_is_draw(action)
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={
+                    "action": action,
+                    "status": "success"
+                }
+            )
+        @self.router.get("/system/send/report")
+        async def sendReport():
+            await self.send_daily_report()
+            return Response(
+                content="Report Send to Telegram Group",
+                media_type="text/plain"
             )
             

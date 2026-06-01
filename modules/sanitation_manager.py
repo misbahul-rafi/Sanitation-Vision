@@ -28,28 +28,31 @@ class SanitationManager:
 
     def get_manager_status(self):
         return self._status
+    
+    async def send_daily_report(self):
+        for camera in self.cameras:
+            for table in camera.get_tables():
+                if table.get_start_time() is not None:
+                    logger.info(
+                        f"finalizing table {table.get_id()} before daily report"
+                    )
+                    table.insert_record()
+                    table.reset_time()
+
+        message = "=====Daily Report=====\n"
+        message += f"Date: {datetime.now().strftime('%d-%b-%Y')}\n\n"
+
+        for camera in self.cameras:
+            message += camera.daily_report()
+
+        await self.notifier.send_message(message)
 
     async def _is_operational_time(self):
         if self._open_hour <= datetime.now().time() <= self._close_hour:
             self._status = True
         else:
             if self._status:
-                for camera in self.cameras:
-                    for table in camera.get_tables():
-                        if table.get_start_time() is not None:
-                            logger.info(
-                                f"finalizing table {table.get_id()} before daily report"
-                            )
-                            table.insert_record()
-                            table.reset_time()
-
-                message = "=====Daily Report=====\n"
-                message += f"Date: {datetime.now().strftime('%d-%b-%Y')}\n\n"
-
-                for camera in self.cameras:
-                    message += camera.daily_report()
-
-                await self.notifier.send_message(message)
+                await self._send_daily_report()
                 self._status = False
         return self._status
     

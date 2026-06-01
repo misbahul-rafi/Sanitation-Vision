@@ -81,11 +81,14 @@ class Table:
             if(self._start_time is None):
                 return
             now = time.time()
+            duration = now - self._start_time
+            if (duration <= 60):
+                return
             record = {
                 "table_id": self._id,
                 "start_time": datetime.fromtimestamp(self._start_time).isoformat(),
                 "clean_time": datetime.fromtimestamp(now).isoformat(),
-                "duration_seconds": round(now - self._start_time)
+                "duration_seconds": duration
             }
             self._daily_records.append(record)
             with open(self._history_path, "a", newline="", encoding="utf-8") as f:

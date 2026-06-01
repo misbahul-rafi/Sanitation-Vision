@@ -8,8 +8,6 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
 
-
-
 class SanitationApp:
     def __init__(self):
         load_dotenv()
@@ -35,7 +33,8 @@ class SanitationApp:
             shutdown_is_set=self._shutdown_event.is_set,
             cameras=self._cameras,
             get_resmon=self._resmon.snapshot,
-            manager_status = self.manager.get_manager_status
+            manager_status = self.manager.get_manager_status,
+            send_daily_report = self.manager.send_daily_report
         )
         self._setup_routes()
         self._setup_cors()
@@ -58,21 +57,21 @@ class SanitationApp:
                 logger.addHandler(stream_handler)
         return logger
 
-
-
     def _create_cameras(self):
         return [
-            Camera("indoor", self._camera_indoor, [
-            Table(1, [272, 145, 465, 430]),
-            Table(2, [1, 204, 319, 689]),
-            Table(3, [536, 317, 960, 959]),
-            Table(4, [1, 620, 495, 1080]),
-        ]),
-            Camera("outdoor", self._camera_outdoor, [
-            Table(7, [1, 558, 442, 1063]),
-            Table(8, [385, 206, 665, 552]),
-            Table(9, [665, 255, 955, 787]),
-        ]),
+                Camera("indoor", self._camera_indoor, [
+                Table(1, [283, 172, 450, 358]),
+                Table(2, [95, 413, 314, 656]),
+                Table(3, [100, 661, 441, 1077]),
+                Table(4, [490, 311, 908, 823]),
+            ]),
+                Camera("outdoor", self._camera_outdoor, [
+                Table(5, [102, 618, 402, 1035]),
+                Table(6, [408, 328, 580, 596]),
+                Table(7, [670, 396, 845, 786]),
+                Table(8, [551, 203, 674, 331]),
+                Table(9, [743, 224, 885, 394]),
+            ]),
         ]
 
     def _setup_routes(self):
